@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       playerName, submittedBy, role,
       gameId, gameLabel,
       stats, selfGrades,
-      peerName, peerGrades,
+      peerName, peerStats, peerGrades,
       coachGrades,
       filmMinute, notes
     } = body
@@ -32,34 +32,39 @@ export async function POST(req: Request) {
     const timestamp = new Date().toISOString()
     const rows: string[][] = []
 
-    // Player self row
+    const s = (v: unknown) => (v ?? '').toString()
+
+    // Player self row — columns: Timestamp, GameID, Game, SubmittedBy, Player, Type,
+    //   Pass, Complete, ShotOnGoal, ShotNotOnGoal, TakeAway, LoseBall, DangerousBall, BadTouch,
+    //   FilmMinute, Notes, Gr-Passing, Gr-TakeAways, Gr-Touches, Gr-Control, Gr-Recovery
     rows.push([
-      timestamp, gameId || '', gameLabel || '', submittedBy || playerName, playerName, 'self',
-      stats?.pass || '', stats?.complete || '', stats?.shotOnGoal || '',
-      stats?.shotNotOnGoal || '', stats?.takeAway || '', stats?.loseBallDribbling || '',
-      stats?.dangerousBallMiddle || '', stats?.badTouch || '',
-      filmMinute || '', notes || '',
-      selfGrades?.Passing || '', selfGrades?.['Take Aways'] || '', selfGrades?.Touches || '',
-      selfGrades?.Control || '', selfGrades?.Recovery || ''
+      timestamp, s(gameId), s(gameLabel), s(submittedBy || playerName), s(playerName), 'self',
+      s(stats?.pass), s(stats?.complete), s(stats?.shotOnGoal), s(stats?.shotNotOnGoal),
+      s(stats?.takeAway), s(stats?.loseBallDribbling), s(stats?.dangerousBallMiddle), s(stats?.badTouch),
+      s(filmMinute), s(notes),
+      s(selfGrades?.Passing), s(selfGrades?.['Take Aways']), s(selfGrades?.Touches),
+      s(selfGrades?.Control), s(selfGrades?.Recovery)
     ])
 
-    // Peer eval row
-    if (peerName && peerGrades) {
+    // Peer row — now includes peer's stats too
+    if (peerName) {
       rows.push([
-        timestamp, gameId || '', gameLabel || '', submittedBy || playerName, peerName, 'peer',
-        '', '', '', '', '', '', '', '', '', '',
-        peerGrades?.Passing || '', peerGrades?.['Take Aways'] || '', peerGrades?.Touches || '',
-        peerGrades?.Control || '', peerGrades?.Recovery || ''
+        timestamp, s(gameId), s(gameLabel), s(submittedBy || playerName), s(peerName), 'peer',
+        s(peerStats?.pass), s(peerStats?.complete), s(peerStats?.shotOnGoal), s(peerStats?.shotNotOnGoal),
+        s(peerStats?.takeAway), s(peerStats?.loseBallDribbling), s(peerStats?.dangerousBallMiddle), s(peerStats?.badTouch),
+        s(filmMinute), '',
+        s(peerGrades?.Passing), s(peerGrades?.['Take Aways']), s(peerGrades?.Touches),
+        s(peerGrades?.Control), s(peerGrades?.Recovery)
       ])
     }
 
     // Coach grades row
     if (role === 'coach' && coachGrades) {
       rows.push([
-        timestamp, gameId || '', gameLabel || '', submittedBy || playerName, playerName, 'coach',
+        timestamp, s(gameId), s(gameLabel), s(submittedBy || playerName), s(playerName), 'coach',
         '', '', '', '', '', '', '', '', '', '',
-        coachGrades?.Passing || '', coachGrades?.['Take Aways'] || '', coachGrades?.Touches || '',
-        coachGrades?.Control || '', coachGrades?.Recovery || ''
+        s(coachGrades?.Passing), s(coachGrades?.['Take Aways']), s(coachGrades?.Touches),
+        s(coachGrades?.Control), s(coachGrades?.Recovery)
       ])
     }
 
