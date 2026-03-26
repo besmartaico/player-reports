@@ -178,6 +178,9 @@ export default function EntryPage() {
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#6b0000', display: 'inline-block' }} />
               MY STATS — {firstName(playerName)}
             </h2>
+            
+            {/* Spacer to align stats with peer panel which has selector above */}
+            <div style={{ height: '82px' }} />
 
             {STAT_ROWS.map(([k, label]) => (
               <StatRow key={k} label={label} value={selfStats[k]} onChange={v => setSelfStat(k, v)} />
