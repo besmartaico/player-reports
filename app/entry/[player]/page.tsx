@@ -41,17 +41,17 @@ export default function EntryPage() {
   const [role, setRole] = useState('')
   const [players, setPlayers] = useState<{name:string}[]>([])
   const [peerName, setPeerName] = useState('')
-  const [gameDate, setGameDate] = useState('')
   const [filmMinute, setFilmMinute] = useState('')
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [gameId, setGameId] = useState('')
+  const [gameLabel, setGameLabel] = useState('')
 
   const emptyGrades = (): Grades => ({ Passing: '', 'Take Aways': '', Touches: '', Control: '', Recovery: '' })
   const [selfGrades, setSelfGrades] = useState<Grades>(emptyGrades())
   const [peerGrades, setPeerGrades] = useState<Grades>(emptyGrades())
   const [coachGrades, setCoachGrades] = useState<Grades>(emptyGrades())
-
   const emptyStats = () => ({ pass: '', complete: '', shotOnGoal: '', shotNotOnGoal: '', takeAway: '', loseBallDribbling: '', dangerousBallMiddle: '', badTouch: '' })
   const [stats, setStats] = useState(emptyStats())
 
@@ -59,12 +59,17 @@ export default function EntryPage() {
     const r = sessionStorage.getItem('role')
     if (!r) { router.push('/'); return }
     setRole(r)
+    const sg = sessionStorage.getItem('selectedGame') || ''
+    const sgl = sessionStorage.getItem('selectedGameLabel') || ''
+    setGameId(sg)
+    setGameLabel(sgl)
     fetch('/api/players').then(r => r.json()).then(d => setPlayers(d.players || []))
   }, [router])
 
   const setStat = (key: string, val: string) => setStats(s => ({ ...s, [key]: val }))
 
   const handleSubmit = async () => {
+    if (!gameId) { alert('No game selected. Go back and select a game first.'); return }
     setSubmitting(true)
     try {
       await fetch('/api/submit', {
@@ -72,11 +77,12 @@ export default function EntryPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           playerName, submittedBy: playerName, role,
+          gameId, gameLabel,
           stats, selfGrades,
           peerName: peerName || null,
           peerGrades: peerName ? peerGrades : null,
           coachGrades: role === 'coach' ? coachGrades : null,
-          gameDate, filmMinute, notes
+          filmMinute, notes
         })
       })
       setSubmitted(true)
@@ -91,10 +97,12 @@ export default function EntryPage() {
       </div>
       <div style={{ textAlign: 'center' }}>
         <h2 style={{ color: '#e0e0e0', fontWeight: '700', margin: '0 0 0.5rem 0', fontSize: '1.25rem' }}>Report Submitted</h2>
-        <p style={{ color: '#616161', fontSize: '0.85rem', margin: 0 }}>Film data saved for {playerName}{peerName ? ' and ' + peerName : ''}</p>
+        <p style={{ color: '#616161', fontSize: '0.85rem', margin: 0 }}>
+          {playerName}{peerName ? ' & ' + peerName : ''} · {gameLabel || gameId}
+        </p>
       </div>
       <div style={{ display: 'flex', gap: '0.75rem' }}>
-        <button onClick={() => { setSubmitted(false); setStats(emptyStats()); setSelfGrades(emptyGrades()); setPeerGrades(emptyGrades()); setCoachGrades(emptyGrades()); setNotes(''); }}
+        <button onClick={() => { setSubmitted(false); setStats(emptyStats()); setSelfGrades(emptyGrades()); setPeerGrades(emptyGrades()); setCoachGrades(emptyGrades()); setNotes(''); setPeerName(''); }}
           style={{ padding: '0.625rem 1.25rem', background: '#800000', border: 'none', borderRadius: '0.5rem', color: '#fff', fontWeight: '600', cursor: 'pointer', fontSize: '0.875rem' }}>
           Submit Another
         </button>
@@ -110,7 +118,7 @@ export default function EntryPage() {
     <div style={{ minHeight: '100vh', background: '#0a0a0a', padding: '1.25rem' }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <button onClick={() => router.push('/roster')} style={{ background: 'transparent', border: '1px solid #3a3a3a', borderRadius: '0.5rem', color: '#9e9e9e', padding: '0.375rem 0.75rem', fontSize: '0.8rem', cursor: 'pointer' }}>← Back</button>
             <div>
@@ -118,28 +126,28 @@ export default function EntryPage() {
                 <div style={{ width: '3px', height: '1.25rem', background: '#800000', borderRadius: '2px' }} />
                 <h1 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#e0e0e0', margin: 0, letterSpacing: '0.04em' }}>{playerName.toUpperCase()}</h1>
               </div>
-              <p style={{ color: '#616161', fontSize: '0.7rem', letterSpacing: '0.1em', margin: '0.1rem 0 0 0.55rem' }}>FILM REPORT ENTRY</p>
+              {gameLabel && (
+                <p style={{ color: '#800000', fontSize: '0.7rem', letterSpacing: '0.08em', margin: '0.1rem 0 0 0.55rem', fontWeight: '600' }}>
+                  ⚑ {gameLabel}
+                </p>
+              )}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div>
-              <label style={{ color: '#616161', fontSize: '0.65rem', letterSpacing: '0.08em', display: 'block', marginBottom: '0.25rem' }}>GAME DATE</label>
-              <input type="date" value={gameDate} onChange={e => setGameDate(e.target.value)} style={{ background: '#2a2a2a', border: '1px solid #3a3a3a', borderRadius: '0.375rem', color: '#e0e0e0', padding: '0.375rem 0.5rem', fontSize: '0.8rem', outline: 'none' }} />
-            </div>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
             <div>
               <label style={{ color: '#616161', fontSize: '0.65rem', letterSpacing: '0.08em', display: 'block', marginBottom: '0.25rem' }}>FILM MINUTE</label>
-              <input type="text" value={filmMinute} onChange={e => setFilmMinute(e.target.value)} placeholder="e.g. 0:00-90:00" style={{ background: '#2a2a2a', border: '1px solid #3a3a3a', borderRadius: '0.375rem', color: '#e0e0e0', padding: '0.375rem 0.5rem', fontSize: '0.8rem', width: '120px', outline: 'none' }} />
+              <input type="text" value={filmMinute} onChange={e => setFilmMinute(e.target.value)} placeholder="e.g. 0:00-90:00"
+                style={{ background: '#2a2a2a', border: '1px solid #3a3a3a', borderRadius: '0.375rem', color: '#e0e0e0', padding: '0.375rem 0.5rem', fontSize: '0.8rem', width: '130px', outline: 'none' }} />
             </div>
           </div>
         </div>
 
-        {/* Two-panel grid */}
+        {/* Two-panel */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-          {/* LEFT: My Stats + Self Grades */}
+          {/* LEFT */}
           <div className="section-panel">
             <h2 style={{ color: '#e0e0e0', fontWeight: '700', fontSize: '0.9rem', letterSpacing: '0.08em', margin: '0 0 1.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#800000', display: 'inline-block' }} />
-              MY STATS
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#800000', display: 'inline-block' }} />MY STATS
             </h2>
             <StatInput label="Passes" value={stats.pass} onChange={v => setStat('pass',v)} />
             <StatInput label="Completions" value={stats.complete} onChange={v => setStat('complete',v)} />
@@ -149,57 +157,45 @@ export default function EntryPage() {
             <StatInput label="Lose Ball Dribbling" value={stats.loseBallDribbling} onChange={v => setStat('loseBallDribbling',v)} />
             <StatInput label="Dangerous Ball in Middle" value={stats.dangerousBallMiddle} onChange={v => setStat('dangerousBallMiddle',v)} />
             <StatInput label="Bad Touch" value={stats.badTouch} onChange={v => setStat('badTouch',v)} />
-
             <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid #2a2a2a' }}>
               <p style={{ color: '#800000', fontSize: '0.7rem', letterSpacing: '0.12em', margin: '0 0 1rem 0', fontWeight: '700' }}>MY SELF-EVALUATION</p>
-              {GRADE_CATS.map(cat => (
-                <GradeSelector key={cat} label={cat} grades={selfGrades} setGrades={setSelfGrades} />
-              ))}
+              {GRADE_CATS.map(cat => <GradeSelector key={cat} label={cat} grades={selfGrades} setGrades={setSelfGrades} />)}
             </div>
           </div>
 
-          {/* RIGHT: Peer Eval */}
+          {/* RIGHT */}
           <div className="section-panel">
             <h2 style={{ color: '#e0e0e0', fontWeight: '700', fontSize: '0.9rem', letterSpacing: '0.08em', margin: '0 0 1.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#1e3a5f', display: 'inline-block' }} />
-              PEER EVALUATION
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#1e3a5f', display: 'inline-block' }} />PEER EVALUATION
             </h2>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={{ color: '#616161', fontSize: '0.7rem', letterSpacing: '0.1em', display: 'block', marginBottom: '0.5rem' }}>EVALUATING PLAYER</label>
               <select value={peerName} onChange={e => setPeerName(e.target.value)}
                 style={{ width: '100%', padding: '0.5rem 0.75rem', background: '#2a2a2a', border: '1px solid #3a3a3a', borderRadius: '0.5rem', color: peerName ? '#e0e0e0' : '#616161', fontSize: '0.875rem', outline: 'none', cursor: 'pointer' }}>
                 <option value="">-- Select teammate to evaluate --</option>
-                {players.filter(p => p.name !== playerName).map(p => (
-                  <option key={p.name} value={p.name}>{p.name}</option>
-                ))}
+                {players.filter(p => p.name !== playerName).map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
               </select>
             </div>
             {peerName ? (
               <>
                 <p style={{ color: '#3b82f6', fontSize: '0.7rem', letterSpacing: '0.12em', margin: '0 0 1rem 0', fontWeight: '700' }}>GRADES FOR {peerName.toUpperCase()}</p>
-                {GRADE_CATS.map(cat => (
-                  <GradeSelector key={cat} label={cat} grades={peerGrades} setGrades={setPeerGrades} />
-                ))}
+                {GRADE_CATS.map(cat => <GradeSelector key={cat} label={cat} grades={peerGrades} setGrades={setPeerGrades} />)}
               </>
             ) : (
               <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#3a3a3a' }}>
                 <p style={{ fontSize: '0.8rem', letterSpacing: '0.08em' }}>SELECT A PLAYER ABOVE<br/>TO ADD PEER EVALUATION</p>
               </div>
             )}
-
-            {/* Coach section */}
             {role === 'coach' && (
               <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid #2a2a2a' }}>
                 <p style={{ color: '#a81212', fontSize: '0.7rem', letterSpacing: '0.12em', margin: '0 0 1rem 0', fontWeight: '700' }}>⚑ COACH GRADES FOR {playerName.toUpperCase()}</p>
-                {GRADE_CATS.map(cat => (
-                  <GradeSelector key={cat} label={cat} grades={coachGrades} setGrades={setCoachGrades} />
-                ))}
+                {GRADE_CATS.map(cat => <GradeSelector key={cat} label={cat} grades={coachGrades} setGrades={setCoachGrades} />)}
               </div>
             )}
           </div>
         </div>
 
-        {/* Notes + Submit */}
+        {/* Notes */}
         <div className="section-panel" style={{ marginBottom: '1rem' }}>
           <label style={{ color: '#616161', fontSize: '0.7rem', letterSpacing: '0.1em', display: 'block', marginBottom: '0.5rem' }}>NOTES</label>
           <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Film notes, timestamps, observations..."
@@ -207,7 +203,7 @@ export default function EntryPage() {
         </div>
 
         <button onClick={handleSubmit} disabled={submitting}
-          style={{ width: '100%', padding: '0.875rem', background: '#800000', border: 'none', borderRadius: '0.5rem', color: '#fff', fontWeight: '700', fontSize: '1rem', cursor: submitting ? 'wait' : 'pointer', letterSpacing: '0.05em', transition: 'background 0.15s' }}>
+          style={{ width: '100%', padding: '0.875rem', background: '#800000', border: 'none', borderRadius: '0.5rem', color: '#fff', fontWeight: '700', fontSize: '1rem', cursor: submitting ? 'wait' : 'pointer', letterSpacing: '0.05em' }}>
           {submitting ? 'SUBMITTING...' : 'SUBMIT FILM REPORT'}
         </button>
       </div>
