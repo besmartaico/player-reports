@@ -31,33 +31,33 @@ export async function GET() {
     const rows = parseGvizCsv(text)
     if (rows.length < 2) return NextResponse.json({ games: [] })
 
+    // Clean header values (strip surrounding quotes)
     const headers = rows[0].map(h => h.replace(/^"|"$/g, '').trim())
     
-    // Auto-detect common column names
-    const idIdx = headers.findIndex(h => /^id$/i.test(h))
-    const dateIdx = headers.findIndex(h => /date/i.test(h))
-    const oppIdx = headers.findIndex(h => /opponent|vs|team|away/i.test(h))
-    const locIdx = headers.findIndex(h => /location|venue|home|place/i.test(h))
-    const labelIdx = headers.findIndex(h => /label|name|title|game/i.test(h))
+    // Find columns - handle exact headers: Date, Oponent, Team
+    const dateIdx = headers.findIndex(h => /^date$/i.test(h))
+    const oppIdx  = headers.findIndex(h => /^opon?ent$/i.test(h))  // handles Oponent & Opponent
+    const teamIdx = headers.findIndex(h => /^team$/i.test(h))
 
     const games = rows.slice(1)
       .map((r, i) => {
-        const clean = (idx: number) => idx >= 0 ? r[idx]?.replace(/^"|"$/g, '').trim() || '' : ''
-        const date = clean(dateIdx)
+        const clean = (idx: number) => idx >= 0 ? (r[idx] || '').replace(/^"|"$/g, '').trim() : ''
+        const date     = clean(dateIdx)
         const opponent = clean(oppIdx)
-        const location = clean(locIdx)
-        const customLabel = clean(labelIdx)
-        const id = clean(idIdx) || String(i + 1)
-        
-        // Build display label
-        let label = customLabel || ''
-        if (!label && opponent) label = opponent
-        if (date) label = label ? `${date} - ${label}` : date
-        if (!label) label = `Game ${i + 1}`
-        
-        return { id, label, date, opponent, location, row: r.map(c => c.replace(/^"|"$/g, '').trim()) }
+        const team     = clean(teamIdx)
+
+        if (!date && !opponent) return null   // skip empty rows
+
+        // Display: "Mar 15 - vs Roosevelt (Varsity)"
+        let label = ''
+        if (date)     label += date
+        if (opponent) label += (label ? ' - vs ' : 'vs ') + opponent
+        if (team)     label += ' (' + team + ')'
+        if (!label)   label = 'Game ' + (i + 1)
+
+        return { id: String(i + 1), label, date, opponent, team }
       })
-      .filter(g => g.label && g.label !== ('Game ' + (0 + 1)))
+      .filter((g): g is NonNullable<typeof g> => g !== null)
 
     return NextResponse.json({ games, headers })
   } catch (e) {
