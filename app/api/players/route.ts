@@ -21,13 +21,18 @@ export async function GET() {
   try {
     const auth = getAuth()
     const sheets = google.sheets({ version: 'v4', auth })
+
+    // First get spreadsheet metadata to find the actual first sheet name
+    const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID })
+    const firstSheet = meta.data.sheets?.[0]?.properties?.title ?? 'Sheet1'
+    
     const resp = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: 'Sheet1!A:Z',
+      range: `${firstSheet}!A:Z`,
     })
 
     const rows = resp.data.values ?? []
-    if (rows.length < 2) return NextResponse.json({ players: [] })
+    if (rows.length < 2) return NextResponse.json({ players: [], sheetName: firstSheet })
 
     const headers = rows[0].map((h: string) => h.trim())
     const nameIdx = headers.findIndex((h: string) => /name|player/i.test(h))
@@ -42,7 +47,7 @@ export async function GET() {
         potentialTeam: ti >= 0 ? r[ti]?.trim() || 'Unassigned' : 'Unassigned',
       }))
 
-    return NextResponse.json({ players, headers }, { headers: { 'cache-control': 'no-store' } })
+    return NextResponse.json({ players, headers, sheetName: firstSheet }, { headers: { 'cache-control': 'no-store' } })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error('Players API error:', msg)
