@@ -54,7 +54,7 @@ export default function RosterPage() {
 
   const teamColor = (team: string) => {
     const colors: Record<string,string> = {
-      'Varsity': '#800000', 'JV': '#1e3a5f', 'Sophomore': '#166534',
+      'Varsity': '#6b0000', 'JV': '#1e3a5f', 'Sophomore': '#166534',
       'Freshman': '#713f12', 'Unassigned': '#3a3a3a'
     }
     return colors[team] || '#4a4a4a'
@@ -67,7 +67,7 @@ export default function RosterPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '3px', height: '1.5rem', background: '#800000', borderRadius: '2px' }} />
+              <div style={{ width: '3px', height: '1.5rem', background: '#6b0000', borderRadius: '2px' }} />
               <h1 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#e0e0e0', margin: 0, letterSpacing: '0.04em' }}>PLAYER ROSTER</h1>
             </div>
             <p style={{ color: '#616161', fontSize: '0.75rem', letterSpacing: '0.12em', margin: '0.25rem 0 0 0.6rem' }}>
@@ -81,7 +81,7 @@ export default function RosterPage() {
         </div>
 
         {/* Game Selector */}
-        <div style={{ background: '#1a1a1a', border: `1px solid ${selectedGame ? '#800000' : '#3a3a3a'}`, borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1rem' }}>
+        <div style={{ background: '#1a1a1a', border: `1px solid ${selectedGame ? '#6b0000' : '#3a3a3a'}`, borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1rem' }}>
           <label style={{ color: '#616161', fontSize: '0.7rem', letterSpacing: '0.12em', display: 'block', marginBottom: '0.5rem' }}>
             ① SELECT GAME FIRST
           </label>
@@ -89,7 +89,7 @@ export default function RosterPage() {
             <p style={{ color: '#616161', fontSize: '0.8rem', margin: 0 }}>No games found in the Games sheet tab yet.</p>
           ) : (
             <select value={selectedGame} onChange={e => setSelectedGame(e.target.value)}
-              style={{ width: '100%', padding: '0.625rem 0.875rem', background: '#2a2a2a', border: `1px solid ${selectedGame ? '#800000' : '#4a4a4a'}`, borderRadius: '0.5rem', color: selectedGame ? '#e0e0e0' : '#616161', fontSize: '0.9rem', outline: 'none', cursor: 'pointer' }}>
+              style={{ width: '100%', padding: '0.625rem 0.875rem', background: '#2a2a2a', border: `1px solid ${selectedGame ? '#6b0000' : '#4a4a4a'}`, borderRadius: '0.5rem', color: selectedGame ? '#e0e0e0' : '#616161', fontSize: '0.9rem', outline: 'none', cursor: 'pointer' }}>
               <option value="">-- Select a game to report on --</option>
               {games.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}
             </select>
@@ -114,8 +114,8 @@ export default function RosterPage() {
               <button key={t} onClick={() => setTeamFilter(t)} style={{
                 padding: '0.35rem 0.875rem', borderRadius: '1rem', fontSize: '0.8rem', fontWeight: '600',
                 cursor: 'pointer', transition: 'all 0.15s',
-                background: teamFilter === t ? '#800000' : '#2a2a2a',
-                border: teamFilter === t ? '1px solid #a81212' : '1px solid #3a3a3a',
+                background: teamFilter === t ? '#6b0000' : '#2a2a2a',
+                border: teamFilter === t ? '1px solid #800000' : '1px solid #3a3a3a',
                 color: teamFilter === t ? '#fff' : '#9e9e9e'
               }}>{t}</button>
             ))}
@@ -130,7 +130,7 @@ export default function RosterPage() {
         </p>
 
         {loading && <div style={{ textAlign: 'center', padding: '3rem', color: '#616161', fontSize: '0.85rem', letterSpacing: '0.1em' }}>▋ LOADING...</div>}
-        {error && <div style={{ background: '#2d0000', border: '1px solid #800000', borderRadius: '0.5rem', padding: '0.875rem', marginBottom: '1rem' }}><p style={{ color: '#f49898', fontSize: '0.85rem', margin: 0 }}>{error}</p></div>}
+        {error && <div style={{ background: '#1a0000', border: '1px solid #6b0000', borderRadius: '0.5rem', padding: '0.875rem', marginBottom: '1rem' }}><p style={{ color: '#f49898', fontSize: '0.85rem', margin: 0 }}>{error}</p></div>}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
           {filtered.map(player => (
@@ -147,7 +147,7 @@ export default function RosterPage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ color: '#616161', fontSize: '0.8rem' }}>{role === 'coach' ? 'GRADE' : 'ENTER DATA'}</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#800000" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b0000" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
               </div>
             </div>
           ))}
