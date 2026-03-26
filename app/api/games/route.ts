@@ -1,44 +1,42 @@
 import { NextResponse } from 'next/server'
+import { google } from 'googleapis'
+
+export const runtime = 'nodejs'
 
 const SHEET_ID = '1K93hMUEk4do6g30-3ZgoSs5CVF5b9LvEDdJpfOVZ8s0'
 
-function parseGvizCsv(text: string): string[][] {
-  const rows: string[][] = []
-  const lines = text.split('\n')
-  for (const line of lines) {
-    if (!line.trim()) continue
-    const cells: string[] = []
-    let cur = ''
-    let inQuote = false
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i]
-      if (ch === '"') { inQuote = !inQuote }
-      else if (ch === ',' && !inQuote) { cells.push(cur); cur = '' }
-      else { cur += ch }
-    }
-    cells.push(cur)
-    rows.push(cells)
-  }
-  return rows
+function getAuth() {
+  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+  if (!raw) throw new Error('Missing GOOGLE_SERVICE_ACCOUNT_JSON')
+  const creds = JSON.parse(raw)
+  creds.private_key = creds.private_key.replace(/\\n/g, '\n')
+  return new google.auth.JWT({
+    email: creds.client_email,
+    key: creds.private_key,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+  })
 }
 
 export async function GET() {
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Games`
-    const resp = await fetch(url, { next: { revalidate: 30 } })
-    if (!resp.ok) throw new Error('Games sheet fetch failed: ' + resp.status)
-    const text = await resp.text()
-    const rows = parseGvizCsv(text)
+    const auth = getAuth()
+    const sheets = google.sheets({ version: 'v4', auth })
+    const resp = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: 'Games!A:Z',
+    })
+
+    const rows = resp.data.values ?? []
     if (rows.length < 2) return NextResponse.json({ games: [] })
 
-    const headers = rows[0].map(h => h.replace(/^"|"$/g, '').trim())
-    const dateIdx = headers.findIndex(h => /^date$/i.test(h))
-    const oppIdx  = headers.findIndex(h => /^oppon?ents?$/i.test(h))
-    const teamIdx = headers.findIndex(h => /^team$/i.test(h))
+    const headers = rows[0].map((h: string) => h.trim())
+    const dateIdx = headers.findIndex((h: string) => /^date$/i.test(h))
+    const oppIdx  = headers.findIndex((h: string) => /^oppon?ents?$/i.test(h))
+    const teamIdx = headers.findIndex((h: string) => /^team$/i.test(h))
 
     const games = rows.slice(1)
-      .map((r, i) => {
-        const clean = (idx: number) => idx >= 0 ? (r[idx] || '').replace(/^"|"$/g, '').trim() : ''
+      .map((r: string[], i: number) => {
+        const clean = (idx: number) => idx >= 0 ? (r[idx] ?? '').trim() : ''
         const date     = clean(dateIdx)
         const opponent = clean(oppIdx)
         const team     = clean(teamIdx)
@@ -52,9 +50,10 @@ export async function GET() {
       })
       .filter((g): g is NonNullable<typeof g> => g !== null)
 
-    return NextResponse.json({ games, headers })
-  } catch (e) {
-    console.error('Games API error:', e)
-    return NextResponse.json({ error: String(e), games: [] }, { status: 500 })
+    return NextResponse.json({ games, headers }, { headers: { 'cache-control': 'no-store' } })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('Games API error:', msg)
+    return NextResponse.json({ error: msg, games: [] }, { status: 500 })
   }
 }
