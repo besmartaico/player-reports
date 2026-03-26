@@ -103,7 +103,7 @@ export default function EntryPage() {
       </div>
       <div style={{ display: 'flex', gap: '0.75rem' }}>
         <button onClick={() => { setSubmitted(false); setStats(emptyStats()); setSelfGrades(emptyGrades()); setPeerGrades(emptyGrades()); setCoachGrades(emptyGrades()); setNotes(''); setPeerName(''); }}
-          style={{ padding: '0.625rem 1.25rem', background: '#800000', border: 'none', borderRadius: '0.5rem', color: '#fff', fontWeight: '600', cursor: 'pointer', fontSize: '0.875rem' }}>
+          style={{ padding: '0.625rem 1.25rem', background: '#6b0000', border: 'none', borderRadius: '0.5rem', color: '#fff', fontWeight: '600', cursor: 'pointer', fontSize: '0.875rem' }}>
           Submit Another
         </button>
         <button onClick={() => router.push('/roster')}
@@ -123,11 +123,11 @@ export default function EntryPage() {
             <button onClick={() => router.push('/roster')} style={{ background: 'transparent', border: '1px solid #3a3a3a', borderRadius: '0.5rem', color: '#9e9e9e', padding: '0.375rem 0.75rem', fontSize: '0.8rem', cursor: 'pointer' }}>← Back</button>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <div style={{ width: '3px', height: '1.25rem', background: '#800000', borderRadius: '2px' }} />
+                <div style={{ width: '3px', height: '1.25rem', background: '#6b0000', borderRadius: '2px' }} />
                 <h1 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#e0e0e0', margin: 0, letterSpacing: '0.04em' }}>{playerName.toUpperCase()}</h1>
               </div>
               {gameLabel && (
-                <p style={{ color: '#800000', fontSize: '0.7rem', letterSpacing: '0.08em', margin: '0.1rem 0 0 0.55rem', fontWeight: '600' }}>
+                <p style={{ color: '#6b0000', fontSize: '0.7rem', letterSpacing: '0.08em', margin: '0.1rem 0 0 0.55rem', fontWeight: '600' }}>
                   ⚑ {gameLabel}
                 </p>
               )}
@@ -147,7 +147,7 @@ export default function EntryPage() {
           {/* LEFT */}
           <div className="section-panel">
             <h2 style={{ color: '#e0e0e0', fontWeight: '700', fontSize: '0.9rem', letterSpacing: '0.08em', margin: '0 0 1.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#800000', display: 'inline-block' }} />MY STATS
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#6b0000', display: 'inline-block' }} />MY STATS
             </h2>
             <StatInput label="Passes" value={stats.pass} onChange={v => setStat('pass',v)} />
             <StatInput label="Completions" value={stats.complete} onChange={v => setStat('complete',v)} />
@@ -158,7 +158,7 @@ export default function EntryPage() {
             <StatInput label="Dangerous Ball in Middle" value={stats.dangerousBallMiddle} onChange={v => setStat('dangerousBallMiddle',v)} />
             <StatInput label="Bad Touch" value={stats.badTouch} onChange={v => setStat('badTouch',v)} />
             <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid #2a2a2a' }}>
-              <p style={{ color: '#800000', fontSize: '0.7rem', letterSpacing: '0.12em', margin: '0 0 1rem 0', fontWeight: '700' }}>MY SELF-EVALUATION</p>
+              <p style={{ color: '#6b0000', fontSize: '0.7rem', letterSpacing: '0.12em', margin: '0 0 1rem 0', fontWeight: '700' }}>MY SELF-EVALUATION</p>
               {GRADE_CATS.map(cat => <GradeSelector key={cat} label={cat} grades={selfGrades} setGrades={setSelfGrades} />)}
             </div>
           </div>
@@ -188,7 +188,7 @@ export default function EntryPage() {
             )}
             {role === 'coach' && (
               <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid #2a2a2a' }}>
-                <p style={{ color: '#a81212', fontSize: '0.7rem', letterSpacing: '0.12em', margin: '0 0 1rem 0', fontWeight: '700' }}>⚑ COACH GRADES FOR {playerName.toUpperCase()}</p>
+                <p style={{ color: '#800000', fontSize: '0.7rem', letterSpacing: '0.12em', margin: '0 0 1rem 0', fontWeight: '700' }}>⚑ COACH GRADES FOR {playerName.toUpperCase()}</p>
                 {GRADE_CATS.map(cat => <GradeSelector key={cat} label={cat} grades={coachGrades} setGrades={setCoachGrades} />)}
               </div>
             )}
@@ -203,7 +203,7 @@ export default function EntryPage() {
         </div>
 
         <button onClick={handleSubmit} disabled={submitting}
-          style={{ width: '100%', padding: '0.875rem', background: '#800000', border: 'none', borderRadius: '0.5rem', color: '#fff', fontWeight: '700', fontSize: '1rem', cursor: submitting ? 'wait' : 'pointer', letterSpacing: '0.05em' }}>
+          style={{ width: '100%', padding: '0.875rem', background: '#6b0000', border: 'none', borderRadius: '0.5rem', color: '#fff', fontWeight: '700', fontSize: '1rem', cursor: submitting ? 'wait' : 'pointer', letterSpacing: '0.05em' }}>
           {submitting ? 'SUBMITTING...' : 'SUBMIT FILM REPORT'}
         </button>
       </div>
