@@ -17,11 +17,19 @@ function getAuth() {
   })
 }
 
-function clamp(v, min = 0, max = 100) { return Math.min(max, Math.max(min, v)) }
+interface StatSet {
+  pass: number; complete: number; goals: number; assists: number
+  shotOnGoal: number; shotNotOnGoal: number; takeAway: number
+  loseBallDribbling: number; dangerousBallMiddle: number; badTouch: number
+}
 
-function scoreFromStats(s) {
+function clamp(v: number, min = 0, max = 100): number {
+  return Math.min(max, Math.max(min, v))
+}
+
+function scoreFromStats(s: StatSet): number {
   const passComp = s.pass > 0 ? (s.complete / s.pass) * 100 : 0
-  let passScore
+  let passScore: number
   if (passComp >= 90) passScore = 100
   else if (passComp >= 80) passScore = 80 + (passComp - 80) * 2
   else if (passComp >= 70) passScore = 60 + (passComp - 70) * 2
@@ -42,7 +50,7 @@ function scoreFromStats(s) {
   return clamp(raw)
 }
 
-function scoreToGrade(score) {
+function scoreToGrade(score: number): string {
   if (score >= 96) return 'A'
   if (score >= 90) return 'A-'
   if (score >= 86) return 'B+'
@@ -57,10 +65,10 @@ function scoreToGrade(score) {
   return 'F'
 }
 
-function mergeStats(a, b, bWeight = 0.5) {
+function mergeStats(a: StatSet, b: StatSet | null, bWeight = 0.5): StatSet {
   if (!b) return a
   const w = bWeight
-  const blend = (av, bv) => Math.round(av * (1 - w) + bv * w)
+  const blend = (av: number, bv: number) => Math.round(av * (1 - w) + bv * w)
   return {
     pass: blend(a.pass, b.pass), complete: blend(a.complete, b.complete),
     goals: blend(a.goals, b.goals), assists: blend(a.assists, b.assists),
@@ -70,7 +78,7 @@ function mergeStats(a, b, bWeight = 0.5) {
   }
 }
 
-function toStatSet(r) {
+function toStatSet(r: Record<string, number>): StatSet {
   return {
     pass: r.pass || 0, complete: r.complete || 0, goals: r.goals || 0, assists: r.assists || 0,
     shotOnGoal: r.shotOnGoal || 0, shotNotOnGoal: r.shotNotOnGoal || 0, takeAway: r.takeAway || 0,
@@ -86,7 +94,7 @@ export async function GET() {
     const rows = resp.data.values ?? []
     if (rows.length < 2) return NextResponse.json({ reports: [] }, { headers: { 'cache-control': 'no-store' } })
 
-    const rawReports = rows.slice(1).filter(r => r[0]).map(r => ({
+    const rawReports = rows.slice(1).filter((r: string[]) => r[0]).map((r: string[]) => ({
       timestamp: r[0] ?? '', gameId: r[1] ?? '', gameLabel: r[2] ?? '',
       submittedBy: r[3] ?? '', player: r[4] ?? '', type: r[5] ?? 'self',
       stats: {
@@ -98,10 +106,11 @@ export async function GET() {
       },
       filmMinute: r[16] ?? '', notes: r[17] ?? '',
       grades: { Passing: r[18] ?? '', TakeAways: r[19] ?? '', Touches: r[20] ?? '', Control: r[21] ?? '', Recovery: r[22] ?? '' },
-      perfGrade: '', perfScore: 0,
+      perfGrade: '' as string,
+      perfScore: 0 as number,
     }))
 
-    const playerGameMap = {}
+    const playerGameMap: Record<string, { self: typeof rawReports[0] | null; peers: typeof rawReports[0][] }> = {}
     for (const r of rawReports) {
       const key = r.player + '::' + r.gameId
       if (!playerGameMap[key]) playerGameMap[key] = { self: null, peers: [] }
@@ -113,11 +122,11 @@ export async function GET() {
       const { self, peers } = playerGameMap[key]
       if (!self) continue
       const selfSet = toStatSet(self.stats)
-      let peerSet = null
+      let peerSet: StatSet | null = null
       if (peers.length > 0) {
-        const totals = { pass:0,complete:0,goals:0,assists:0,shotOnGoal:0,shotNotOnGoal:0,takeAway:0,loseBallDribbling:0,dangerousBallMiddle:0,badTouch:0 }
-        for (const p of peers) for (const k of Object.keys(totals)) totals[k] += p.stats[k] || 0
-        for (const k of Object.keys(totals)) totals[k] = Math.round(totals[k] / peers.length)
+        const totals: StatSet = { pass:0,complete:0,goals:0,assists:0,shotOnGoal:0,shotNotOnGoal:0,takeAway:0,loseBallDribbling:0,dangerousBallMiddle:0,badTouch:0 }
+        for (const p of peers) for (const k of Object.keys(totals) as (keyof StatSet)[]) totals[k] += p.stats[k] || 0
+        for (const k of Object.keys(totals) as (keyof StatSet)[]) (totals[k] as number) = Math.round(totals[k] / peers.length)
         peerSet = totals
       }
       const blended = mergeStats(selfSet, peerSet, 0.4)
@@ -127,7 +136,7 @@ export async function GET() {
     }
 
     return NextResponse.json({ reports: rawReports }, { headers: { 'cache-control': 'no-store' } })
-  } catch (e) {
+  } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error('Reports API error:', msg)
     return NextResponse.json({ error: msg, reports: [] }, { status: 500 })
