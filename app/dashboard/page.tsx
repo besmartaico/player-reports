@@ -180,12 +180,26 @@ export default function DashboardPage() {
   const [selectedPlayer,setSelectedPlayer]=useState<string|null>(null)
   const [editingReport,setEditingReport]=useState<Report|null>(null)
   const [deletingRow,setDeletingRow]=useState<number|null>(null)
+  const [sampleLoading,setSampleLoading]=useState(false)
+  const [clearingLoading,setClearingLoading]=useState(false)
+  const [hasSample,setHasSample]=useState(false)
 
   const loadReports=()=>{
     setLoading(true)
     Promise.all([fetch('/api/reports').then(r=>r.json()),fetch('/api/players').then(r=>r.json())])
-      .then(([rd,pd])=>{setReports(rd.reports||[]);setPlayers(pd.players||[]);setLoading(false)})
+      .then(([rd,pd])=>{const reps=rd.reports||[];setReports(reps);setPlayers(pd.players||[]);setLoading(false);setHasSample(reps.some((r: {isSample?:boolean})=>r.isSample))})
       .catch(e=>{setError('Failed to load: '+e.message);setLoading(false)})
+  }
+  const handleGenerateSample=async()=>{
+    setSampleLoading(true)
+    try{const r=await fetch('/api/sample-data',{method:'POST'});const d=await r.json();if(d.error)alert('Error: '+d.error);else loadReports()}catch(e){alert('Failed: '+e)}
+    setSampleLoading(false)
+  }
+  const handleClearSample=async()=>{
+    if(!confirm('Clear all sample data from the sheet?'))return
+    setClearingLoading(true)
+    try{const r=await fetch('/api/sample-data',{method:'DELETE'});const d=await r.json();if(d.error)alert('Error: '+d.error);else loadReports()}catch(e){alert('Failed: '+e)}
+    setClearingLoading(false)
   }
 
   useEffect(()=>{
@@ -479,6 +493,8 @@ export default function DashboardPage() {
             <p style={{color:'#616161',fontSize:'0.75rem',letterSpacing:'0.12em',margin:'0.25rem 0 0 0.6rem'}}>LONE PEAK KNIGHTS · {role==='coach'?'COACH VIEW':'PLAYER VIEW'}</p>
           </div>
           <div style={{display:'flex',gap:'0.625rem'}}>
+            <button onClick={handleGenerateSample} disabled={sampleLoading} style={{background:'transparent',border:'1px solid #166534',borderRadius:'0.5rem',color:'#4ade80',padding:'0.4rem 0.875rem',fontSize:'0.8rem',cursor:sampleLoading?'wait':'pointer',opacity:sampleLoading?0.5:1}}>{sampleLoading?'GENERATING...':'+ SAMPLE DATA'}</button>
+            {hasSample&&<button onClick={handleClearSample} disabled={clearingLoading} style={{background:'transparent',border:'1px solid #6b0000',borderRadius:'0.5rem',color:'#f87171',padding:'0.4rem 0.875rem',fontSize:'0.8rem',cursor:clearingLoading?'wait':'pointer',opacity:clearingLoading?0.5:1}}>{clearingLoading?'CLEARING...':'CLEAR SAMPLES'}</button>}
             {isCoach&&<button onClick={loadReports} style={{background:'transparent',border:'1px solid #3a3a3a',borderRadius:'0.5rem',color:'#9e9e9e',padding:'0.4rem 0.875rem',fontSize:'0.8rem',cursor:'pointer'}}>REFRESH</button>}
             <button onClick={()=>router.push('/roster')} style={{background:'transparent',border:'1px solid #3a3a3a',borderRadius:'0.5rem',color:'#9e9e9e',padding:'0.4rem 0.875rem',fontSize:'0.8rem',cursor:'pointer'}}>← ROSTER</button>
             <button onClick={()=>{sessionStorage.clear();router.push('/')}} style={{background:'transparent',border:'1px solid #3a3a3a',borderRadius:'0.5rem',color:'#9e9e9e',padding:'0.4rem 0.875rem',fontSize:'0.8rem',cursor:'pointer'}}>LOGOUT</button>
