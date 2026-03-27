@@ -20,10 +20,8 @@ export default function RosterPage() {
     const r = sessionStorage.getItem('role')
     if (!r) { router.push('/'); return }
     setRole(r)
-    // Restore game selection if returning
     const sg = sessionStorage.getItem('selectedGame')
     if (sg) setSelectedGame(sg)
-
     Promise.all([
       fetch('/api/players').then(r => r.json()),
       fetch('/api/games').then(r => r.json())
@@ -42,10 +40,7 @@ export default function RosterPage() {
   })
 
   const handleSelectPlayer = (name: string) => {
-    if (!selectedGame) {
-      alert('Please select a game first before entering data.')
-      return
-    }
+    if (!selectedGame) { alert('Please select a game first before entering data.'); return }
     sessionStorage.setItem('selectedGame', selectedGame)
     const game = games.find(g => g.id === selectedGame)
     if (game) sessionStorage.setItem('selectedGameLabel', game.label)
@@ -53,7 +48,7 @@ export default function RosterPage() {
   }
 
   const teamColor = (team: string) => {
-    const colors: Record<string,string> = {
+    const colors: Record<string, string> = {
       'Varsity': '#6b0000', 'JV': '#1e3a5f', 'Sophomore': '#166534',
       'Freshman': '#713f12', 'Unassigned': '#3a3a3a'
     }
@@ -63,7 +58,6 @@ export default function RosterPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', padding: '1.5rem' }}>
       <div style={{ maxWidth: '720px', margin: '0 auto' }}>
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -74,13 +68,16 @@ export default function RosterPage() {
               LONE PEAK KNIGHTS · {role === 'coach' ? 'COACH VIEW' : 'PLAYER VIEW'}
             </p>
           </div>
-          <button onClick={() => { sessionStorage.clear(); router.push('/') }}
-            style={{ background: 'transparent', border: '1px solid #3a3a3a', borderRadius: '0.5rem', color: '#9e9e9e', padding: '0.4rem 0.875rem', fontSize: '0.8rem', cursor: 'pointer' }}>
-            LOGOUT
-          </button>
+          <div style={{ display: 'flex', gap: '0.625rem' }}>
+            <button onClick={() => router.push('/dashboard')} style={{ background: 'transparent', border: '1px solid #6b0000', borderRadius: '0.5rem', color: '#9e9e9e', padding: '0.4rem 0.875rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+              DASHBOARD
+            </button>
+            <button onClick={() => { sessionStorage.clear(); router.push('/') }} style={{ background: 'transparent', border: '1px solid #3a3a3a', borderRadius: '0.5rem', color: '#9e9e9e', padding: '0.4rem 0.875rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+              LOGOUT
+            </button>
+          </div>
         </div>
 
-        {/* Game Selector */}
         <div style={{ background: '#1a1a1a', border: `1px solid ${selectedGame ? '#6b0000' : '#3a3a3a'}`, borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1rem' }}>
           <label style={{ color: '#616161', fontSize: '0.7rem', letterSpacing: '0.12em', display: 'block', marginBottom: '0.5rem' }}>
             ① SELECT GAME FIRST
@@ -97,31 +94,22 @@ export default function RosterPage() {
           {selectedGame && (
             <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
-              <span style={{ color: '#16a34a', fontSize: '0.75rem', letterSpacing: '0.06em' }}>
-                Game selected — now pick a player below
-              </span>
+              <span style={{ color: '#16a34a', fontSize: '0.75rem', letterSpacing: '0.06em' }}>Game selected — now pick a player below</span>
             </div>
           )}
         </div>
 
-        {/* Team Filter */}
         <div style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1rem' }}>
           <label style={{ color: '#616161', fontSize: '0.7rem', letterSpacing: '0.12em', display: 'block', marginBottom: '0.625rem' }}>
             ② FILTER BY POTENTIAL TEAM PRIMARY
           </label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
             {teams.map(t => (
-              <button key={t} onClick={() => setTeamFilter(t)} style={{
-                padding: '0.35rem 0.875rem', borderRadius: '1rem', fontSize: '0.8rem', fontWeight: '600',
-                cursor: 'pointer', transition: 'all 0.15s',
-                background: teamFilter === t ? '#6b0000' : '#2a2a2a',
-                border: teamFilter === t ? '1px solid #800000' : '1px solid #3a3a3a',
-                color: teamFilter === t ? '#fff' : '#9e9e9e'
-              }}>{t}</button>
+              <button key={t} onClick={() => setTeamFilter(t)}
+                style={{ padding: '0.35rem 0.875rem', borderRadius: '1rem', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s', background: teamFilter === t ? '#6b0000' : '#2a2a2a', border: teamFilter === t ? '1px solid #800000' : '1px solid #3a3a3a', color: teamFilter === t ? '#fff' : '#9e9e9e' }}>{t}</button>
             ))}
           </div>
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search player name..."
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search player name..."
             style={{ width: '100%', padding: '0.5rem 0.875rem', background: '#2a2a2a', border: '1px solid #3a3a3a', borderRadius: '0.5rem', color: '#e0e0e0', fontSize: '0.875rem', boxSizing: 'border-box', outline: 'none' }} />
         </div>
 
@@ -134,11 +122,10 @@ export default function RosterPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
           {filtered.map(player => (
-            <div key={player.name} onClick={() => handleSelectPlayer(player.name)} className="player-card"
-              style={{ opacity: selectedGame ? 1 : 0.5 }}>
+            <div key={player.name} onClick={() => handleSelectPlayer(player.name)} className="player-card" style={{ opacity: selectedGame ? 1 : 0.5 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
                 <div style={{ width: '2.25rem', height: '2.25rem', borderRadius: '50%', background: teamColor(player.potentialTeam), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '700', color: '#fff', flexShrink: 0 }}>
-                  {player.name.split(' ').map((n:string) => n[0]).join('').substring(0,2).toUpperCase()}
+                  {player.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
                 </div>
                 <div>
                   <p style={{ color: '#e0e0e0', fontWeight: '600', margin: 0, fontSize: '0.95rem' }}>{player.name}</p>
