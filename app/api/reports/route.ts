@@ -86,30 +86,66 @@ function toStatSet(r: Record<string, number>): StatSet {
   }
 }
 
+// Parse a row — handles both old 21-col format (no goals/assists) and new 23-col format
+function parseRow(r: string[], rowIndex: number) {
+  // Detect old format: col 6 (G) is pass but col 8 might be shotOnGoal (old) or goals (new)
+  // Old: G=Pass H=Complete I=ShotOnGoal J=ShotNotOnGoal K=TakeAway L=LoseBall M=Danger N=BadTouch O=FilmMin P=Notes Q..U=grades (21 cols)
+  // New: G=Pass H=Complete I=Goals J=Assists K=ShotOnGoal L=ShotNotOnGoal M=TakeAway N=LoseBall O=Danger P=BadTouch Q=FilmMin R=Notes S..W=grades (23 cols)
+  const isOldFormat = r.length <= 21
+
+  let stats, filmMinute, notes, grades
+  if (isOldFormat) {
+    stats = {
+      pass: Number(r[6]) || 0, complete: Number(r[7]) || 0,
+      goals: 0, assists: 0,
+      shotOnGoal: Number(r[8]) || 0, shotNotOnGoal: Number(r[9]) || 0,
+      takeAway: Number(r[10]) || 0, loseBallDribbling: Number(r[11]) || 0,
+      dangerousBallMiddle: Number(r[12]) || 0, badTouch: Number(r[13]) || 0,
+    }
+    filmMinute = r[14] ?? ''
+    notes = r[15] ?? ''
+    grades = { Passing: r[16] ?? '', TakeAways: r[17] ?? '', Touches: r[18] ?? '', Control: r[19] ?? '', Recovery: r[20] ?? '' }
+  } else {
+    stats = {
+      pass: Number(r[6]) || 0, complete: Number(r[7]) || 0,
+      goals: Number(r[8]) || 0, assists: Number(r[9]) || 0,
+      shotOnGoal: Number(r[10]) || 0, shotNotOnGoal: Number(r[11]) || 0,
+      takeAway: Number(r[12]) || 0, loseBallDribbling: Number(r[13]) || 0,
+      dangerousBallMiddle: Number(r[14]) || 0, badTouch: Number(r[15]) || 0,
+    }
+    filmMinute = r[16] ?? ''
+    notes = r[17] ?? ''
+    grades = { Passing: r[18] ?? '', TakeAways: r[19] ?? '', Touches: r[20] ?? '', Control: r[21] ?? '', Recovery: r[22] ?? '' }
+  }
+
+  return {
+    rowIndex, // 1-based sheet row number for edit/delete
+    timestamp: r[0] ?? '', gameId: r[1] ?? '', gameLabel: r[2] ?? '',
+    submittedBy: r[3] ?? '', player: r[4] ?? '', type: r[5] ?? 'self',
+    stats, filmMinute, notes, grades,
+    perfGrade: '' as string, perfScore: 0 as number,
+  }
+}
+
 export async function GET() {
   try {
     const auth = getAuth()
     const sheets = google.sheets({ version: 'v4', auth })
-    const resp = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: 'Reports!A:W' })
+    const resp = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: 'Reports!A:W',
+    })
     const rows = resp.data.values ?? []
-    if (rows.length < 2) return NextResponse.json({ reports: [] }, { headers: { 'cache-control': 'no-store' } })
+    if (!rows.length) return NextResponse.json({ reports: [] }, { headers: { 'cache-control': 'no-store' } })
 
-    const rawReports = rows.slice(1).filter((r: string[]) => r[0]).map((r: string[]) => ({
-      timestamp: r[0] ?? '', gameId: r[1] ?? '', gameLabel: r[2] ?? '',
-      submittedBy: r[3] ?? '', player: r[4] ?? '', type: r[5] ?? 'self',
-      stats: {
-        pass: Number(r[6]) || 0, complete: Number(r[7]) || 0,
-        goals: Number(r[8]) || 0, assists: Number(r[9]) || 0,
-        shotOnGoal: Number(r[10]) || 0, shotNotOnGoal: Number(r[11]) || 0,
-        takeAway: Number(r[12]) || 0, loseBallDribbling: Number(r[13]) || 0,
-        dangerousBallMiddle: Number(r[14]) || 0, badTouch: Number(r[15]) || 0,
-      },
-      filmMinute: r[16] ?? '', notes: r[17] ?? '',
-      grades: { Passing: r[18] ?? '', TakeAways: r[19] ?? '', Touches: r[20] ?? '', Control: r[21] ?? '', Recovery: r[22] ?? '' },
-      perfGrade: '' as string,
-      perfScore: 0 as number,
-    }))
+    // Skip header row only if first cell looks like a header (not a timestamp)
+    const startRow = rows[0]?.[0]?.toLowerCase().includes('timestamp') ? 1 : 0
+    const rawReports = rows
+      .slice(startRow)
+      .map((r, i) => parseRow(r as string[], startRow + i + 1)) // rowIndex is 1-based sheet row
+      .filter(r => r.timestamp && r.player) // skip empty/invalid rows
 
+    // Compute performance grades
     const playerGameMap: Record<string, { self: typeof rawReports[0] | null; peers: typeof rawReports[0][] }> = {}
     for (const r of rawReports) {
       const key = r.player + '::' + r.gameId
