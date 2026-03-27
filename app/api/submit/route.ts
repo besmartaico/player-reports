@@ -21,50 +21,50 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
     const {
-      playerName, submittedBy, role,
-      gameId, gameLabel,
-      stats, selfGrades,
-      peerName, peerStats, peerGrades,
-      coachGrades,
-      filmMinute, notes
+      playerName, submittedBy, role, gameId, gameLabel,
+      stats, selfGrades, peerName, peerStats, peerGrades,
+      coachGrades, filmMinute, notes
     } = body
 
     const timestamp = new Date().toISOString()
     const rows: string[][] = []
-
     const s = (v: unknown) => (v ?? '').toString()
 
-    // Player self row — columns: Timestamp, GameID, Game, SubmittedBy, Player, Type,
-    //   Pass, Complete, ShotOnGoal, ShotNotOnGoal, TakeAway, LoseBall, DangerousBall, BadTouch,
-    //   FilmMinute, Notes, Gr-Passing, Gr-TakeAways, Gr-Touches, Gr-Control, Gr-Recovery
+    // Columns A–W (23 cols):
+    // A=Timestamp, B=GameID, C=Game, D=SubmittedBy, E=Player, F=Type,
+    // G=Pass, H=Complete, I=Goals, J=Assists, K=ShotOnGoal, L=ShotNotOnGoal,
+    // M=TakeAway, N=LoseBall, O=DangerousBall, P=BadTouch,
+    // Q=FilmMinute, R=Notes,
+    // S=Gr-Passing, T=Gr-TakeAways, U=Gr-Touches, V=Gr-Control, W=Gr-Recovery
+
     rows.push([
       timestamp, s(gameId), s(gameLabel), s(submittedBy || playerName), s(playerName), 'self',
-      s(stats?.pass), s(stats?.complete), s(stats?.shotOnGoal), s(stats?.shotNotOnGoal),
-      s(stats?.takeAway), s(stats?.loseBallDribbling), s(stats?.dangerousBallMiddle), s(stats?.badTouch),
+      s(stats?.pass), s(stats?.complete), s(stats?.goals), s(stats?.assists),
+      s(stats?.shotOnGoal), s(stats?.shotNotOnGoal), s(stats?.takeAway),
+      s(stats?.loseBallDribbling), s(stats?.dangerousBallMiddle), s(stats?.badTouch),
       s(filmMinute), s(notes),
-      s(selfGrades?.Passing), s(selfGrades?.['Take Aways']), s(selfGrades?.Touches),
-      s(selfGrades?.Control), s(selfGrades?.Recovery)
+      s(selfGrades?.Passing), s(selfGrades?.['Take Aways']),
+      s(selfGrades?.Touches), s(selfGrades?.Control), s(selfGrades?.Recovery)
     ])
 
-    // Peer row — now includes peer's stats too
     if (peerName) {
       rows.push([
         timestamp, s(gameId), s(gameLabel), s(submittedBy || playerName), s(peerName), 'peer',
-        s(peerStats?.pass), s(peerStats?.complete), s(peerStats?.shotOnGoal), s(peerStats?.shotNotOnGoal),
-        s(peerStats?.takeAway), s(peerStats?.loseBallDribbling), s(peerStats?.dangerousBallMiddle), s(peerStats?.badTouch),
+        s(peerStats?.pass), s(peerStats?.complete), s(peerStats?.goals), s(peerStats?.assists),
+        s(peerStats?.shotOnGoal), s(peerStats?.shotNotOnGoal), s(peerStats?.takeAway),
+        s(peerStats?.loseBallDribbling), s(peerStats?.dangerousBallMiddle), s(peerStats?.badTouch),
         s(filmMinute), '',
-        s(peerGrades?.Passing), s(peerGrades?.['Take Aways']), s(peerGrades?.Touches),
-        s(peerGrades?.Control), s(peerGrades?.Recovery)
+        s(peerGrades?.Passing), s(peerGrades?.['Take Aways']),
+        s(peerGrades?.Touches), s(peerGrades?.Control), s(peerGrades?.Recovery)
       ])
     }
 
-    // Coach grades row
     if (role === 'coach' && coachGrades) {
       rows.push([
         timestamp, s(gameId), s(gameLabel), s(submittedBy || playerName), s(playerName), 'coach',
-        '', '', '', '', '', '', '', '', '', '',
-        s(coachGrades?.Passing), s(coachGrades?.['Take Aways']), s(coachGrades?.Touches),
-        s(coachGrades?.Control), s(coachGrades?.Recovery)
+        '', '', '', '', '', '', '', '', '', '', '', '',
+        s(coachGrades?.Passing), s(coachGrades?.['Take Aways']),
+        s(coachGrades?.Touches), s(coachGrades?.Control), s(coachGrades?.Recovery)
       ])
     }
 
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
     const sheets = google.sheets({ version: 'v4', auth })
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: 'Reports!A:U',
+      range: 'Reports!A:W',
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: rows },
     })
