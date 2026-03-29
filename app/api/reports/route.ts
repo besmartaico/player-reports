@@ -11,17 +11,50 @@ function getAuth() {
 }
 interface StatSet { pass:number;complete:number;goals:number;assists:number;shotOnGoal:number;shotNotOnGoal:number;takeAway:number;loseBallDribbling:number;dangerousBallMiddle:number;badTouch:number }
 function clamp(v:number,min=0,max=100):number { return Math.min(max,Math.max(min,v)) }
-function scoreFromStats(s:StatSet):number {
-  const pc=s.pass>0?(s.complete/s.pass)*100:0
-  let ps:number
-  if(pc>=90)ps=100;else if(pc>=80)ps=80+(pc-80)*2;else if(pc>=70)ps=60+(pc-70)*2;else if(pc>=60)ps=40+(pc-60)*2;else ps=Math.max(0,pc*0.67)
-  const pv=s.pass>0?clamp(Math.log(s.pass+1)/Math.log(41)*100):0
-  const raw=ps*0.35+pv*0.10+clamp(s.takeAway*10)*0.15+clamp(s.shotOnGoal*12)*0.15+clamp(s.goals*25)*0.15+clamp(s.assists*15)*0.05+clamp(s.shotNotOnGoal*5)*0.05-clamp(s.loseBallDribbling*12+Math.max(0,s.loseBallDribbling-3)*6)*0.10-clamp(s.dangerousBallMiddle*10+Math.max(0,s.dangerousBallMiddle-3)*5)*0.10-clamp(s.badTouch*8+Math.max(0,s.badTouch-4)*4)*0.10
+function scoreFromStats(s: StatSet): number {
+  const clamp = (v: number, min = 0, max = 100): number => Math.min(max, Math.max(min, v))
+
+  // Every player starts at 50 — baseline for showing up and playing
+  const baseline = 50
+
+  // Passing completion bonus/penalty — centered at 70% (neutral)
+  const passComp = s.pass > 0 ? (s.complete / s.pass) * 100 : 70
+  const compBonus = clamp((passComp - 70) * 0.6, -15, 15)
+
+  // Pass volume — small reward for being involved
+  const passVol = s.pass > 0 ? clamp(Math.log(s.pass + 1) / Math.log(36) * 8, 0, 8) : 0
+
+  // Positive contributions
+  const goalBonus   = clamp(s.goals * 6, 0, 18)
+  const assistBonus = clamp(s.assists * 4, 0, 10)
+  const sogBonus    = clamp(s.shotOnGoal * 2.5, 0, 10)
+  const taBonus     = clamp(s.takeAway * 3, 0, 12)
+  const sngBonus    = clamp(s.shotNotOnGoal * 0.5, 0, 3)
+
+  // Penalties — scale up the more you repeat the mistake
+  const lbdPen = clamp(s.loseBallDribbling * 3 + Math.max(0, s.loseBallDribbling - 3) * 2, 0, 20)
+  const dbmPen = clamp(s.dangerousBallMiddle * 3 + Math.max(0, s.dangerousBallMiddle - 3) * 2, 0, 15)
+  const btPen  = clamp(s.badTouch * 2 + Math.max(0, s.badTouch - 4) * 1.5, 0, 18)
+
+  const raw = baseline + compBonus + passVol + goalBonus + assistBonus + sogBonus + taBonus + sngBonus - lbdPen - dbmPen - btPen
   return clamp(raw)
 }
-function scoreToGrade(score:number):string {
-  if(score>=96)return'A';if(score>=90)return'A-';if(score>=86)return'B+';if(score>=82)return'B';if(score>=78)return'B-'
-  if(score>=74)return'C+';if(score>=70)return'C';if(score>=66)return'C-';if(score>=62)return'D+';if(score>=58)return'D';if(score>=54)return'D-';return'F'
+
+function scoreToGrade(score: number): string {
+  // Scale: most typical games land between C and B+
+  // F is reserved for truly awful performances with many mistakes
+  if (score >= 90) return 'A'
+  if (score >= 83) return 'A-'
+  if (score >= 76) return 'B+'
+  if (score >= 70) return 'B'
+  if (score >= 63) return 'B-'
+  if (score >= 57) return 'C+'
+  if (score >= 50) return 'C'
+  if (score >= 43) return 'C-'
+  if (score >= 35) return 'D+'
+  if (score >= 27) return 'D'
+  if (score >= 19) return 'D-'
+  return 'F'
 }
 function mergeStats(a:StatSet,b:StatSet|null,w=0.4):StatSet {
   if(!b)return a
