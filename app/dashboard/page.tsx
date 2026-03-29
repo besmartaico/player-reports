@@ -302,7 +302,14 @@ export default function DashboardPage() {
   }
 
   const PlayersListView=()=>{
-    const playerNames=Array.from(new Set(selfReports.map(r=>r.player))).sort()
+    // Players with self-reports
+    const selfPlayerNames=Array.from(new Set(selfReports.map(r=>r.player))).sort()
+    // Players who only have peer evals (no self-report in current filter)
+    const peerOnlyNames=Array.from(new Set(
+      reports.filter(r=>r.type==='peer'&&(gameFilter==='All'||r.gameId===gameFilter)&&(teamFilter==='All'||(playerTeamMap[r.player]||'Unassigned')===teamFilter))
+        .map(r=>r.player)
+    )).filter(n=>!selfPlayerNames.includes(n)).sort()
+    const playerNames=[...selfPlayerNames,...peerOnlyNames]
     if(!playerNames.length) return <div style={{textAlign:'center',padding:'3rem',color:'#4a4a4a',fontSize:'0.85rem',letterSpacing:'0.08em'}}>NO REPORTS FOUND</div>
     return <div style={{display:'flex',flexDirection:'column',gap:'0.625rem'}}>
       {playerNames.map(name=>{
@@ -314,6 +321,23 @@ export default function DashboardPage() {
         const seasonGrade=avgGradeStr(pReps.map(r=>r.perfGrade).filter(Boolean))
         const selfPassGrade=avgGradeStr(pReps.map(r=>r.grades.Passing).filter(Boolean))
         const peerPassGrade=avgGradeStr(peerReps.map(r=>r.grades.Passing).filter(Boolean))
+        const isPeerOnly = !selfReports.some(r=>r.player===name)
+        if(isPeerOnly){
+          const peerRepsForPlayer=reports.filter(r=>r.player===name&&r.type==='peer'&&(gameFilter==='All'||r.gameId===gameFilter))
+          return <div key={name}
+            style={{background:'#1a1a1a',border:'1px solid #2a2a2a',borderRadius:'0.75rem',padding:'0.875rem 1.125rem',display:'flex',alignItems:'center',justifyContent:'space-between',opacity:0.65}}>
+            <div style={{display:'flex',alignItems:'center',gap:'0.875rem'}}>
+              <div style={{width:'2.25rem',height:'2.25rem',borderRadius:'50%',background:'#3a3a3a',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.75rem',fontWeight:700,color:'#666',flexShrink:0}}>{initials(name)}</div>
+              <div>
+                <p style={{color:'#9e9e9e',fontWeight:700,margin:0,fontSize:'0.9rem'}}>{name}</p>
+                <p style={{color:'#616161',fontSize:'0.72rem',margin:0}}>{playerTeamMap[name]||'Unassigned'} · {peerRepsForPlayer.length} peer eval{peerRepsForPlayer.length!==1?'s':''} received</p>
+              </div>
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:'0.75rem'}}>
+              <span style={{background:'#2a1a00',color:'#fb923c',fontSize:'0.65rem',fontWeight:700,padding:'3px 10px',borderRadius:'20px',letterSpacing:'0.06em',border:'1px solid #fb923c44'}}>AWAITING SELF-REPORT</span>
+            </div>
+          </div>
+        }
         return <div key={name} onClick={()=>setSelectedPlayer(name)}
           style={{background:'#1a1a1a',border:'1px solid #2a2a2a',borderRadius:'0.75rem',padding:'0.875rem 1.125rem',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between'}}
           onMouseEnter={e=>(e.currentTarget.style.borderColor='#6b0000')}
